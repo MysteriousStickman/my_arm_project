@@ -51,7 +51,6 @@
 - 运行`ros2 launch moveit_config demo.launch.py`
 
 # TODO:List
-- 将当前项目的ros2_controllers.yaml   moveit_controllers.yaml  joint_limits.yaml 备份起来，重新处理预定义姿态pose_1  pose_2
 - 学习ros2 action 编写基于C++ API的action  commander
 - 考虑如何构建commander 哪些是订阅  哪些是服务  哪些是动作
 - 如何定义环境碰撞
