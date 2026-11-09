@@ -32,11 +32,30 @@
         <joint name="Joint5" value="0.0607"/>
         <joint name="Joint6" value="0"/>
     </group_state>
-    <group_state name="pose_1" group="gripper">
-        <joint name="Gripper" value="0.0145"/>
+    <group_state name="pose_1" group="arm">
+        <joint name="Joint1" value="-0.6531"/>
+        <joint name="Joint2" value="-0.2342"/>
+        <joint name="Joint3" value="0.4766"/>
+        <joint name="Joint4" value="-0.1389"/>
+        <joint name="Joint5" value="-0.9108"/>
+        <joint name="Joint6" value="-0.8501"/>
     </group_state>
-    <group_state name="pose_2" group="gripper">
-        <joint name="Gripper" value="0.0073"/>
+    <group_state name="pose_2" group="arm">
+        <joint name="Joint1" value="-0.805"/>
+        <joint name="Joint2" value="0.5985"/>
+        <joint name="Joint3" value="0.8016"/>
+        <joint name="Joint4" value="-1.2188"/>
+        <joint name="Joint5" value="0.373"/>
+        <joint name="Joint6" value="0.7807"/>
+    </group_state>
+    <group_state name="gripper_half" group="gripper">
+        <joint name="Gripper" value="0.0079"/>
+    </group_state>
+    <group_state name="gripper_open" group="gripper">
+        <joint name="Gripper" value="0"/>
+    </group_state>
+    <group_state name="gripper_closed" group="gripper">
+        <joint name="Gripper" value="0.025"/>
     </group_state>
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
     <virtual_joint name="virtual_joint" type="fixed" parent_frame="world" child_link="base_link"/>
