@@ -1,0 +1,10 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: alicia_d_descriptions
+    relative_path: urdf/Alicia_D_v5_6/Alicia_D_v5_6_gripper_50mm.urdf
+  srdf:
+    relative_path: config/Alicia_D_v5_6_gripper_50mm.srdf
+  package_settings:
+    author_name: MysteriousStickman
+    author_email: lyf154323@163.com
+    generated_timestamp: 1794214113
