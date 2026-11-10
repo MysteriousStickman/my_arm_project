@@ -50,6 +50,29 @@
 
 - 运行`ros2 launch moveit_config demo.launch.py`
 
+## 新建自己的启动脚本：`my_robot_bringup`
+删除src、include,新建config、launch。
+对于config，实际上就是在已有的urdf的基础上新增`ros2_control`字段，在该字段内定义hardware部分，厂家原始提供的driver作为一个plugin放入其中。
+- config：
+    - 将moveit_config中的`alicia_d.ros2_control.xacro`拿过来，并重新整理一下，主要是对于硬件部分添加是否开启真实硬件选项
+        - `use_fake_hardware=true`: 开启仿真
+        - `use_fake_hardware=true`: 开启真机
+    - `alicia_d.urdf.xacro`: 引入机械臂原始urdf,并添加`ros2_control`字段
+- launch
+    - `my_robot.launch.py`,开启各节点：
+        - `robot_state_publisher`: 机器人状态发布节点
+        - `world_to_base`: 静态坐标转换节点。主要是在moveit助手中添加了`virtual_joint`
+        - `controller_manager`: 启动控制管理器
+        - `joint_state_broadcaster`: 开启关节状态广播器
+        - `arm_controller`: 开启机械臂控制器
+        - `gripper_controller`: 开启夹爪控制器
+        - `move_group`: MoveIt move_group 规划节点
+        - `rviz`: 开启可视化
+- 构建激活并执行启动:
+    - 仅仿真: `ros2 launch my_robot_bringup my_robot.launch.py`
+    - 真机: `ros2 launch my_robot_bringup my_robot.launch.py use_fake_hardware:=false port:=/dev/ttyACM0 speed_deg_s:=0.1`
+
+
 # TODO:List
 - 学习ros2 action 编写基于C++ API的action  commander
 - 考虑如何构建commander 哪些是订阅  哪些是服务  哪些是动作

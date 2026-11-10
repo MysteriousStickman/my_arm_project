@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="Alicia_D_v5_6_gripper_50mm">
+  <xacro:arg
+    name="initial_positions_file"
+    default="$(find moveit_config)/config/initial_positions.yaml" />
+  <xacro:arg name="use_fake_hardware" default="true" />
+  <xacro:arg name="hw_port" default="" />
+  <xacro:arg name="hw_gripper_type" default="50mm" />
+  <xacro:arg name="hw_default_speed_deg_s" default="5.0" />
+
+  <xacro:include
+    filename="$(find alicia_d_descriptions)/urdf/Alicia_D_v5_6/Alicia_D_v5_6_gripper_50mm.urdf" />
+  <xacro:include filename="$(find my_robot_bringup)/config/alicia_d.ros2_control.xacro" />
+
+  <xacro:alicia_d_ros2_control
+    name="AliciaDSystem"
+    initial_positions_file="$(arg initial_positions_file)"
+    use_fake_hardware="$(arg use_fake_hardware)"
+    hw_port="$(arg hw_port)"
+    hw_gripper_type="$(arg hw_gripper_type)"
+    hw_default_speed_deg_s="$(arg hw_default_speed_deg_s)" />
+</robot>
