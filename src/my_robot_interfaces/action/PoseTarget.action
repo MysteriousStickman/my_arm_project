@@ -1,0 +1,20 @@
+# 目标末端位姿。frame_id 必须填写，姿态使用四元数。
+geometry_msgs/PoseStamped target_pose
+
+# false：普通目标位姿规划；true：笛卡尔直线路径规划。
+bool cartesian_path
+
+# false：只规划；true：规划并执行。
+bool is_execute
+---
+# Action 的最终业务结果。
+bool is_finish
+string message
+---
+# 固定阶段码供客户端程序判断，message 只用于显示和日志。
+uint8 STAGE_PREPARING=0
+uint8 STAGE_PLANNING=1
+uint8 STAGE_EXECUTING=2
+
+uint8 stage
+string message

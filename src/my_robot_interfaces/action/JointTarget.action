@@ -1,0 +1,21 @@
+# 目标关节名称。
+# positions 与 joint_names 按下标一一对应。
+string[] joint_names
+
+# 旋转关节单位 rad, 移动关节单位为m
+float64[] positions
+
+# false: 只规划; true: 规划并执行
+bool is_execute
+---
+# 结果
+bool is_finish
+string message
+---
+# 固定阶段码供客户端判断，message 只用于显示和日志
+uint8 STAGE_PREPARING=0
+uint8 STAGE_PLANNING=1
+uint8 STAGE_EXECUTING=2
+
+uint8 stage
+string message
