@@ -92,6 +92,7 @@
     - `source install/setup.zsh` && `ros2 launch my_robot_bringup my_robot.launch.py use_fake_hardware:=true`
 - `commander_node` 已由上述 launch 启动，不要再单独运行，否则会出现重名节点和重复的 Action Server。
 # TODO:List
+- 如何添加速度控制参数
 - 如何定义环境碰撞
 - 如何引入深度相机
 - 如何进行相机标定
