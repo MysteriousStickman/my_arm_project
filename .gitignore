@@ -5,4 +5,4 @@ install/
 __pycache__/
 */build/*
 .vscode/
-
+/src/test_action/scripts/test.py

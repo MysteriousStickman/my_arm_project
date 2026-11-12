@@ -167,7 +167,7 @@ void Commander::gripper_target_execute(const std::shared_ptr<GoalHandleGripperTa
         if (isCancelGripperRequested(goal_handle))
         {
             finishCanceledGripperGoal(goal_handle, result);
-            goal_active_ = false;
+            gripper_goal_active_ = false;
             return;
         }
 
@@ -181,7 +181,7 @@ void Commander::gripper_target_execute(const std::shared_ptr<GoalHandleGripperTa
         if (isCancelGripperRequested(goal_handle))
         {
             finishCanceledGripperGoal(goal_handle, result);
-            goal_active_ = false;
+            gripper_goal_active_ = false;
             return;
         }
 
