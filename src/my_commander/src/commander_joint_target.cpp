@@ -52,7 +52,6 @@ rclcpp_action::GoalResponse Commander::joint_target_handle_goal(
 
 
     // 校验4：关节名称属于 arm 规划组
-
     const auto robot_model = arm_->getRobotModel();
     if (!robot_model)
     {
@@ -72,7 +71,7 @@ rclcpp_action::GoalResponse Commander::joint_target_handle_goal(
         return rclcpp_action::GoalResponse::REJECT;
     }
 
-    //         用 MoveGroupInterface 动态拿到本组关节，避免硬编码
+    // 用 MoveGroupInterface 动态拿到本组关节，避免硬编码
     const auto &arm_variables = joint_model_group->getVariableNames();
 
     const std::set<std::string> arm_variable_set(
@@ -180,7 +179,7 @@ void Commander::joint_target_execute(const std::shared_ptr<GoalHandleJointTarget
 
     try
     {
-        publishJointTargetStage(
+        publishJointFeedback(
             goal_handle,
             JointTarget::Feedback::STAGE_PREPARING,
             "Preparing target joint");
@@ -260,7 +259,7 @@ std::pair<bool, std::string> Commander::goToJointTarget(
     bool is_execute)
 {
     arm_->setStartStateToCurrentState();
-    publishJointTargetStage(
+    publishJointFeedback(
         goal_handle,
         JointTarget::Feedback::STAGE_PLANNING,
         "Planning pose_target trajectory");
@@ -317,7 +316,7 @@ std::pair<bool, std::string> Commander::planAndExecuteJointTarget(
         return {false, "Goal canceled before trajectory execution"};
     }
 
-    publishJointTargetStage(
+    publishJointFeedback(
         goal_handle,
         JointTarget::Feedback::STAGE_EXECUTING,
         "Executing planned trajectory");
@@ -336,7 +335,7 @@ std::pair<bool, std::string> Commander::planAndExecuteJointTarget(
 
 // 发布机器可判断的固定阶段码。
 // message 只用于日志或界面显示，客户端业务逻辑不应依赖文字内容。
-void Commander::publishJointTargetStage(
+void Commander::publishJointFeedback(
     const std::shared_ptr<GoalHandleJointTarget> &goal_handle,
     uint8_t stage,
     const std::string &message) const

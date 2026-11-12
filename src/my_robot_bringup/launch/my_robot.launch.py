@@ -88,7 +88,7 @@ def launch_setup(context):
         parameters=[
             moveit_config.robot_description,
             PathJoinSubstitution(
-                [FindPackageShare("my_robot_bringup"), "config", "ros2_controllers.yaml"]
+                [FindPackageShare("moveit_config"), "config", "ros2_controllers.yaml"]
             ),
         ],
     )
@@ -125,6 +125,17 @@ def launch_setup(context):
         ],
     )
 
+    commander = Node(
+        package="my_commander",
+        executable="commander_node",
+        output="screen",
+        parameters=[
+            moveit_config.robot_description,
+            moveit_config.robot_description_semantic,
+            moveit_config.robot_description_kinematics,
+        ],
+    )
+
     rviz = Node(
         package="rviz2",
         executable="rviz2",
@@ -151,7 +162,10 @@ def launch_setup(context):
         OnProcessExit(target_action=arm_controller, on_exit=[gripper_controller])
     )
     start_moveit = RegisterEventHandler(
-        OnProcessExit(target_action=gripper_controller, on_exit=[move_group, rviz])
+        OnProcessExit(
+            target_action=gripper_controller,
+            on_exit=[move_group, commander, rviz],
+        )
     )
 
     mode = "FAKE" if use_fake_hardware == "true" else "REAL"

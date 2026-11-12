@@ -12,19 +12,21 @@
 
 #include <my_robot_interfaces/action/pose_target.hpp>
 #include <my_robot_interfaces/action/joint_target.hpp>
+#include <my_robot_interfaces/action/gripper_target.hpp>
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/robot_model/joint_model_group.h>
 
 #include <rclcpp/callback_group.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 
-
-
 using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
 using PoseTarget = my_robot_interfaces::action::PoseTarget;
 using JointTarget = my_robot_interfaces::action::JointTarget;
+using GripperTarget = my_robot_interfaces::action::GripperTarget;
+
 using GoalHandlePoseTarget = rclcpp_action::ServerGoalHandle<PoseTarget>;
 using GoalHandleJointTarget = rclcpp_action::ServerGoalHandle<JointTarget>;
+using GoalHandleGripperTarget = rclcpp_action::ServerGoalHandle<GripperTarget>;
 
 // Commander 不是一个 Node 子类，而是使用外部传入的 ROS 2 节点。
 // 它主要完成两件事：
@@ -38,9 +40,8 @@ public:
     // ---------------------  PoseTarget ---------------------
     // 第一步：收到客户端目标，决定接受还是拒绝。
     rclcpp_action::GoalResponse pose_target_handle_goal(
-        const rclcpp_action::GoalUUID & uuid,
+        const rclcpp_action::GoalUUID &uuid,
         std::shared_ptr<const PoseTarget::Goal> goal);
-
 
     // 客户端请求取消时调用。
     rclcpp_action::CancelResponse pose_target_handle_cancel(
@@ -52,7 +53,6 @@ public:
 
     // 第三步：真正执行这个 Action 目标。
     void pose_target_execute(const std::shared_ptr<GoalHandlePoseTarget> goal_handle);
-  
 
     // 目标位姿规划或笛卡尔路径规划
     std::pair<bool, std::string> goToPoseTarget(
@@ -67,7 +67,7 @@ public:
         bool is_execute);
 
     // 发布机器可判断的固定阶段码。
-    void publishPoseTargetStage(
+    void publishPoseFeedback(
         const std::shared_ptr<GoalHandlePoseTarget> &goal_handle,
         uint8_t stage,
         const std::string &message) const;
@@ -77,7 +77,6 @@ public:
     bool isCancelPoseTargetRequested(
         const std::shared_ptr<GoalHandlePoseTarget> &goal_handle) const;
 
-
     // 只负责完成 Action 协议层的取消：
     // 填写 Result，并将目标从 CANCELING 转换为最终的 CANCELED 状态。
     // 实际机械臂的停止请求已经由 pose_target_handle_cancel() 中的 arm_->stop() 发出。
@@ -85,25 +84,21 @@ public:
         const std::shared_ptr<GoalHandlePoseTarget> &goal_handle,
         const std::shared_ptr<PoseTarget::Result> &result);
 
-
-
-
     // ---------------------  JointTarget ---------------------
     rclcpp_action::GoalResponse joint_target_handle_goal(
-        const rclcpp_action::GoalUUID & uuid,
+        const rclcpp_action::GoalUUID &uuid,
         std::shared_ptr<const JointTarget::Goal> goal);
-    
+
     rclcpp_action::CancelResponse joint_target_handle_cancel(
         const std::shared_ptr<GoalHandleJointTarget> goal_handle);
-    
 
     void joint_target_handle_accepted(
         const std::shared_ptr<GoalHandleJointTarget> goal_handle);
 
     void joint_target_execute(const std::shared_ptr<GoalHandleJointTarget> goal_handle);
- 
+
     std::pair<bool, std::string> goToJointTarget(
-    const std::shared_ptr<GoalHandleJointTarget> &goal_handle,
+        const std::shared_ptr<GoalHandleJointTarget> &goal_handle,
         const std::vector<std::string> &joint_names,
         const std::vector<double> &positions,
         bool is_execute);
@@ -113,22 +108,49 @@ public:
         const std::shared_ptr<MoveGroupInterface> &interface,
         bool is_execute);
 
-    void publishJointTargetStage(
+    void publishJointFeedback(
         const std::shared_ptr<GoalHandleJointTarget> &goal_handle,
         uint8_t stage,
         const std::string &message) const;
 
-
     // 只查询 Action 是否已经进入 CANCELING 状态。
     bool isCancelJointTargetRequested(
         const std::shared_ptr<GoalHandleJointTarget> &goal_handle) const;
-    
 
     // 只负责完成 Action 协议层的取消
     void finishCanceledJointTargetGoal(
         const std::shared_ptr<GoalHandleJointTarget> &goal_handle,
         const std::shared_ptr<JointTarget::Result> &result);
-    
+
+    // ---------------------  GripperTarget ---------------------
+    rclcpp_action::GoalResponse gripper_target_handle_goal(
+        const rclcpp_action::GoalUUID &uuid,
+        std::shared_ptr<const GripperTarget::Goal> goal);
+
+    rclcpp_action::CancelResponse gripper_target_handle_cancel(
+        const std::shared_ptr<GoalHandleGripperTarget> goal_handle);
+
+    void gripper_target_handle_accepted(
+        const std::shared_ptr<GoalHandleGripperTarget> goal_handle);
+
+    void gripper_target_execute(const std::shared_ptr<GoalHandleGripperTarget> goal_handle);
+
+    std::pair<bool, std::string> goToGripperTarget(
+        const std::shared_ptr<GoalHandleGripperTarget> &goal_handle,
+        const double &position,
+        bool is_execute);
+
+    void publishGripperFeedback(
+        const std::shared_ptr<GoalHandleGripperTarget> &goal_handle,
+        uint8_t stage,
+        const std::string &message) const;
+
+    bool isCancelGripperRequested(
+        const std::shared_ptr<GoalHandleGripperTarget> &goal_handle) const;
+
+    void finishCanceledGripperGoal(
+        const std::shared_ptr<GoalHandleGripperTarget> &goal_handle,
+        const std::shared_ptr<GripperTarget::Result> &result);
 
 private:
     // 外部传入的 ROS 2 节点。
@@ -142,14 +164,12 @@ private:
     std::shared_ptr<rclcpp::CallbackGroup> callback_group_;
     std::shared_ptr<rclcpp_action::Server<PoseTarget>> action_pose_target_server_;
     std::shared_ptr<rclcpp_action::Server<JointTarget>> action_joint_target_server_;
-    static constexpr double kBoundTol = 1e-3;  // rad/m 容差，按需调
+    std::shared_ptr<rclcpp_action::Server<GripperTarget>> action_gripper_target_server_;
+    static constexpr double kBoundTol = 1e-5; // rad/m 容差，按需调
 
     // true 表示当前已有目标正在执行。
     // atomic_bool 可以安全地被 ROS 回调线程和后台执行线程同时访问。
     std::atomic_bool goal_active_{false};
 
-
-
+    std::atomic_bool gripper_goal_active_{false};
 };
-
-

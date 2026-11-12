@@ -50,7 +50,7 @@
 
 - 运行`ros2 launch moveit_config demo.launch.py`
 
-## 新建自己的启动脚本：`my_robot_bringup`
+## 新建自己的机器人启动脚本：`my_robot_bringup`
 删除src、include,新建config、launch。
 对于config，实际上就是在已有的urdf的基础上新增`ros2_control`字段，在该字段内定义hardware部分，厂家原始提供的driver作为一个plugin放入其中。
 - config：
@@ -72,11 +72,30 @@
     - 仅仿真: `ros2 launch my_robot_bringup my_robot.launch.py`
     - 真机: `ros2 launch my_robot_bringup my_robot.launch.py use_fake_hardware:=false port:=/dev/ttyACM0 speed_deg_s:=0.1`
 
+## 自定义控制后端：commander
+基于**多线程执行器、并行规划组、Action、自定义消息接口**实现控制后端
+- arm规划：
+    - action name: `goToPoseTarget`：
+        - 消息接口：
+            - 请求
+            - 结果
+            - 反馈
+    - joint_target控制，逆运动学达到目标角度
+- gripper规划：
+    - gripper_open: 夹爪打开
+    - gripper_close: 夹爪关闭
+    - grriper_move: 夹爪移动
 
+
+## 最终启动方式
+- 启动机器人、MoveIt 和 commander：
+    - `source install/setup.zsh` && `ros2 launch my_robot_bringup my_robot.launch.py use_fake_hardware:=true`
+- `commander_node` 已由上述 launch 启动，不要再单独运行，否则会出现重名节点和重复的 Action Server。
 # TODO:List
-- 学习ros2 action 编写基于C++ API的action  commander
-- 考虑如何构建commander 哪些是订阅  哪些是服务  哪些是动作
 - 如何定义环境碰撞
 - 如何引入深度相机
 - 如何进行相机标定
 - 最后才考虑真机
+
+
+- 新建功能包C++，  但是使用python编写前端调用，并执行pose   joint   gripper 动作调用

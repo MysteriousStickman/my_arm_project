@@ -102,7 +102,7 @@ void Commander::pose_target_execute(const std::shared_ptr<GoalHandlePoseTarget> 
 
     try
     {
-        publishPoseTargetStage(
+        publishPoseFeedback(
             goal_handle,
             PoseTarget::Feedback::STAGE_PREPARING,
             "Preparing target pose");
@@ -200,7 +200,7 @@ std::pair<bool, std::string> Commander::goToPoseTarget(
 
     // 每次规划都从机械臂当前状态开始。
     arm_->setStartStateToCurrentState();
-    publishPoseTargetStage(
+    publishPoseFeedback(
         goal_handle,
         PoseTarget::Feedback::STAGE_PLANNING,
         "Planning pose_target trajectory");
@@ -249,7 +249,7 @@ std::pair<bool, std::string> Commander::goToPoseTarget(
         return {false, "Goal canceled before trajectory execution"};
     }
 
-    publishPoseTargetStage(
+    publishPoseFeedback(
         goal_handle,
         PoseTarget::Feedback::STAGE_EXECUTING,
         "Executing Cartesian trajectory");
@@ -294,7 +294,7 @@ std::pair<bool, std::string> Commander::planAndExecutePoseTarget(
         return {false, "Goal canceled before trajectory execution"};
     }
 
-    publishPoseTargetStage(
+    publishPoseFeedback(
         goal_handle,
         PoseTarget::Feedback::STAGE_EXECUTING,
         "Executing planned trajectory");
@@ -310,7 +310,7 @@ std::pair<bool, std::string> Commander::planAndExecutePoseTarget(
 
 // 发布机器可判断的固定阶段码。
 // message 只用于日志或界面显示，客户端业务逻辑不应依赖文字内容。
-void Commander::publishPoseTargetStage(
+void Commander::publishPoseFeedback(
     const std::shared_ptr<GoalHandlePoseTarget> &goal_handle,
     uint8_t stage,
     const std::string &message) const

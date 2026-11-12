@@ -1,0 +1,18 @@
+# 0.0   = 完全打开
+# 0.025 = 完全闭合
+float64 position
+
+# false: 只规划; true: 规划并执行
+bool is_execute
+---
+# 结果
+bool is_finish
+string message
+---
+# 固定阶段码供客户端判断，message 只用于显示和日志
+uint8 STAGE_PREPARING=0
+uint8 STAGE_PLANNING=1
+uint8 STAGE_EXECUTING=2
+
+uint8 stage
+string message
