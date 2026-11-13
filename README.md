@@ -185,21 +185,6 @@ ros2 run tf2_ros tf2_echo base_link gripper_center
     - 夹爪的 MoveIt 规划上限为 `0.05 m/s`，默认 5% 缩放后是 `0.0025 m/s`，25 mm 行程的规划时间约为 10 秒。
     - 真机夹爪协议仍由未修改的厂家驱动使用固定原始速度 `5500`。厂家插件没有暴露夹爪速度参数，仓库也没有提供该值到 `m/s` 的换算关系。因此本项目目前只能控制夹爪的 MoveIt 规划时间，不能承诺真机夹爪协议层速度可调；在厂家提供接口或协议说明前应单独谨慎测试夹爪。
 
-### 启动方式
-仿真： 只需设置 MoveIt 规划速度。
-```bash
-ros2 launch my_robot_bringup my_robot.launch.py \
-  use_fake_hardware:=true \
-  velocity_scaling_factor:=0.05
-```
-真机： 同时设置 MoveIt 规划速度和厂家插件的机械臂速度。
-```bash
-ros2 launch my_robot_bringup my_robot.launch.py \
-  use_fake_hardware:=false \
-  port:=/dev/ttyACM0 \
-  velocity_scaling_factor:=0.05 \
-  speed_deg_s:=5.0
-```
 总结： velocity_scaling_factor 控制 MoveIt 轨迹的规划速度；speed_deg_s 控制真机机械臂的硬件速度。仿真只需设置前者，真机需要同时设置两者。
 
 `velocity_scaling_factor` 决定 MoveIt 轨迹的时间和速度；`speed_deg_s` 是真机厂家协议的速度。仿真只使用前者，真机两者都要保守设置。
@@ -225,10 +210,22 @@ ros2 launch my_robot_bringup my_robot.launch.py \
 
 
 ## 最终启动方式
-- 启动机器人、MoveIt 和 commander：
-    - `source install/setup.zsh` && `ros2 launch my_robot_bringup my_robot.launch.py use_fake_hardware:=true`
-- `commander_node` 已由上述 launch 启动，不要再单独运行，否则会出现重名节点和重复的 Action Server。
+仿真： 只需设置 MoveIt 规划速度。
+```bash
+ros2 launch my_robot_bringup my_robot.launch.py \
+  use_fake_hardware:=true \
+  velocity_scaling_factor:=0.05
+```
+真机： 同时设置 MoveIt 规划速度和厂家插件的机械臂速度。
+```bash
+ros2 launch my_robot_bringup my_robot.launch.py \
+  use_fake_hardware:=false \
+  port:=/dev/ttyACM0 \
+  velocity_scaling_factor:=0.05 \
+  speed_deg_s:=5.0
+```
 # TODO:List
+- 结合实际机械臂环境（机械臂位置，桌子，墙）添加环境碰撞box
 - 如何引入深度相机
 - 如何进行相机标定
 - 最后才考虑真机
