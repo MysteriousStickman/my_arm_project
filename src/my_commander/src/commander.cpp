@@ -1,6 +1,7 @@
 #include "my_commander/commander.h"
 #include <cmath>
 #include <functional>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 #include <tf2/LinearMath/Quaternion.h>
@@ -20,9 +21,31 @@ Commander::Commander(const std::shared_ptr<rclcpp::Node> &node)
 
     // 创建 MoveIt 规划组。
     arm_ = std::make_shared<MoveGroupInterface>(node, "arm");
-    arm_->setMaxVelocityScalingFactor(0.1);     // 使用最大速度的 10%
-    arm_->setMaxAccelerationScalingFactor(0.1); // 使用最大加速度的 10%
     gripper_ = std::make_shared<MoveGroupInterface>(node_, "gripper");
+
+    // joint_limits.yaml 定义绝对上限，下面的参数决定本节点使用速度上限的比例。
+    // NodeOptions 可能已经从 launch 自动声明参数，因此先检查再声明。
+    if (!node_->has_parameter("velocity_scaling_factor"))
+    {
+        node_->declare_parameter<double>("velocity_scaling_factor", 0.05);
+    }
+    const double velocity_scaling_factor =
+        node_->get_parameter("velocity_scaling_factor").as_double();
+
+    if (!std::isfinite(velocity_scaling_factor) ||
+        velocity_scaling_factor <= 0.0 || velocity_scaling_factor > 1.0)
+    {
+        throw std::invalid_argument(
+            "velocity_scaling_factor must be finite and in the range (0.0, 1.0]");
+    }
+
+    arm_->setMaxVelocityScalingFactor(velocity_scaling_factor);
+    gripper_->setMaxVelocityScalingFactor(velocity_scaling_factor);
+
+    RCLCPP_INFO(
+        node_->get_logger(),
+        "Velocity scaling configured: %.3f",
+        velocity_scaling_factor);
 
     // Reentrant 表示该回调组允许多个回调并发执行。
     callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);

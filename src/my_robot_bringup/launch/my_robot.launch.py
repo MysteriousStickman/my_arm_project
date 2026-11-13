@@ -19,6 +19,9 @@ def launch_setup(context):
     use_fake_hardware = LaunchConfiguration("use_fake_hardware").perform(context).lower()
     port = LaunchConfiguration("port").perform(context)
     speed_deg_s = LaunchConfiguration("speed_deg_s").perform(context)
+    velocity_scaling_factor = float(
+        LaunchConfiguration("velocity_scaling_factor").perform(context)
+    )
 
     if use_fake_hardware not in ("true", "false"):
         raise ValueError("use_fake_hardware must be 'true' or 'false'")
@@ -133,6 +136,9 @@ def launch_setup(context):
             moveit_config.robot_description,
             moveit_config.robot_description_semantic,
             moveit_config.robot_description_kinematics,
+            {
+                "velocity_scaling_factor": velocity_scaling_factor,
+            },
         ],
     )
 
@@ -196,8 +202,16 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "speed_deg_s",
-                default_value="0.1",
-                description="Real robot command speed in degrees per second.",
+                default_value="5.0",
+                description=(
+                    "Real-hardware arm speed in deg/s passed to the unchanged "
+                    "vendor hardware plugin."
+                ),
+            ),
+            DeclareLaunchArgument(
+                "velocity_scaling_factor",
+                default_value="0.05",
+                description="MoveIt velocity scaling in the range (0.0, 1.0].",
             ),
             OpaqueFunction(function=launch_setup),
         ]

@@ -101,11 +101,10 @@ Setup Assistant 可能把以下文件恢复成默认值，需要重新检查。
 
 `config/joint_limits.yaml`：
 
-- `default_velocity_scaling_factor: 0.1`
-- `default_acceleration_scaling_factor: 0.1`
-- Joint1 至 Joint5 的 `max_velocity: 5.0`
-- Joint6 的 `max_velocity: 3.0`
-- Gripper 的 `max_velocity: 1.0`
+- `default_velocity_scaling_factor: 0.05`
+- Joint1 至 Joint5 的 `max_velocity: 5.0 rad/s`
+- Joint6 的 `max_velocity: 3.0 rad/s`
+- Gripper 的 `max_velocity: 0.05 m/s`（当前 25 mm 单侧行程的保守规划上限）
 - 只保留主动关节，不为 `right_finger` 配置独立限制。
 
 `config/ros2_controllers.yaml`：
@@ -162,7 +161,44 @@ ros2 run tf2_ros tf2_echo base_link gripper_center
         - `rviz`: 开启可视化
 - 构建激活并执行启动:
     - 仅仿真: `ros2 launch my_robot_bringup my_robot.launch.py`
-    - 真机: `ros2 launch my_robot_bringup my_robot.launch.py use_fake_hardware:=false port:=/dev/ttyACM0 speed_deg_s:=0.1`
+    - 真机: `ros2 launch my_robot_bringup my_robot.launch.py use_fake_hardware:=false port:=/dev/ttyACM0`
+
+## 速度参数的分层和统一入口
+
+所有调速入口集中在本项目的 `my_robot.launch.py`，不修改厂家的描述包和驱动包。
+
+- 控制速度参数：
+    - `velocity_scaling_factor`：速度缩放比例，范围 `(0.0, 1.0]`。项目默认 `0.05`，表示使用各关节速度上限的 5%。
+        - `velocity_scaling_factor` 由 `my_robot.launch.py` 传给 `commander_node`，Commander 同时应用到 `arm` 和 `gripper` 规划组。
+    - `speed_deg_s` 只用于真机，单位为 `deg/s`。本项目的 bringup 将它作为 `default_speed_deg_s` 硬件参数传给未修改的厂家插件；厂家插件使用同一个速度控制六个机械臂关节。项目默认 `5.0`，略高于厂家协议约 `4.39 deg/s` 的下限。
+    - 两者关系: 
+        - `velocity_scaling_factor`是moveit规划的速度缩放比例，各关节规划速度上限为其 max_velocity 乘以该缩放比例。
+        - `speed_deg_s`是真机最大速度。
+        - 要求：**真机硬件速度上限应覆盖 MoveIt 规划轨迹中的最大关节速度，避免硬件速度限制低于规划速度**。
+- 其他说明：
+    - `moveit_config/config/joint_limits.yaml` 中的 `max_velocity` 是各关节绝对规划上限，不作为日常调速旋钮。旋转关节单位是 `rad/s`，直线移动的 Gripper 单位是 `m/s`。
+    - 当前所有关节都设置为 `has_acceleration_limits: false`，没有可信的绝对加速度上限。因此本项目暂不暴露 `acceleration_scaling_factor`，以后取得厂家加速度数据并配置 `max_acceleration` 后再恢复。
+    - 夹爪的 MoveIt 规划上限为 `0.05 m/s`，默认 5% 缩放后是 `0.0025 m/s`，25 mm 行程的规划时间约为 10 秒。
+    - 真机夹爪协议仍由未修改的厂家驱动使用固定原始速度 `5500`。厂家插件没有暴露夹爪速度参数，仓库也没有提供该值到 `m/s` 的换算关系。因此本项目目前只能控制夹爪的 MoveIt 规划时间，不能承诺真机夹爪协议层速度可调；在厂家提供接口或协议说明前应单独谨慎测试夹爪。
+
+### 启动方式
+仿真： 只需设置 MoveIt 规划速度。
+```bash
+ros2 launch my_robot_bringup my_robot.launch.py \
+  use_fake_hardware:=true \
+  velocity_scaling_factor:=0.05
+```
+真机： 同时设置 MoveIt 规划速度和厂家插件的机械臂速度。
+```bash
+ros2 launch my_robot_bringup my_robot.launch.py \
+  use_fake_hardware:=false \
+  port:=/dev/ttyACM0 \
+  velocity_scaling_factor:=0.05 \
+  speed_deg_s:=5.0
+```
+总结： velocity_scaling_factor 控制 MoveIt 轨迹的规划速度；speed_deg_s 控制真机机械臂的硬件速度。仿真只需设置前者，真机需要同时设置两者。
+
+`velocity_scaling_factor` 决定 MoveIt 轨迹的时间和速度；`speed_deg_s` 是真机厂家协议的速度。仿真只使用前者，真机两者都要保守设置。
 
 ## 自定义控制后端：commander
 基于**多线程执行器、并行规划组、Action、自定义消息接口**实现控制后端
@@ -184,7 +220,6 @@ ros2 run tf2_ros tf2_echo base_link gripper_center
     - `source install/setup.zsh` && `ros2 launch my_robot_bringup my_robot.launch.py use_fake_hardware:=true`
 - `commander_node` 已由上述 launch 启动，不要再单独运行，否则会出现重名节点和重复的 Action Server。
 # TODO:List
-- 如何添加速度控制参数
 - 如何定义环境碰撞
 - 如何引入深度相机
 - 如何进行相机标定
