@@ -87,15 +87,15 @@ Commander::Commander(const std::shared_ptr<rclcpp::Node> &node)
     
     RCLCPP_INFO(
     node_->get_logger(),
-    "------------------Planning Frame++++++++++++++++: %s",arm_->getPlanningFrame().c_str());
+    "------------------Planning Frame------------------ %s",arm_->getPlanningFrame().c_str());
     RCLCPP_INFO(
         node_->get_logger(),
-        "Planning Frame: %s",
+        "------------------Planning Frame------------------ %s",
         arm_->getPlanningFrame().c_str());
 
     RCLCPP_INFO(
         node_->get_logger(),
-        "End Effector Link: %s",
+        "------------------End Effector Link------------------ %s",
         arm_->getEndEffectorLink().c_str());
 }
 
