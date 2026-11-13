@@ -9,6 +9,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 #include <my_robot_interfaces/action/pose_target.hpp>
 #include <my_robot_interfaces/action/joint_target.hpp>
@@ -27,6 +28,30 @@ using GripperTarget = my_robot_interfaces::action::GripperTarget;
 using GoalHandlePoseTarget = rclcpp_action::ServerGoalHandle<PoseTarget>;
 using GoalHandleJointTarget = rclcpp_action::ServerGoalHandle<JointTarget>;
 using GoalHandleGripperTarget = rclcpp_action::ServerGoalHandle<GripperTarget>;
+
+
+
+struct WallConfig
+{
+    std::string id;
+
+    // 墙体尺寸
+    double size_x;
+    double size_y;
+    double size_z;
+
+    // 墙体位置
+    double x;
+    double y;
+    double z;
+
+    // 墙体姿态（欧拉角，单位 rad）
+    double roll;
+    double pitch;
+    double yaw;
+};
+
+
 
 // Commander 不是一个 Node 子类，而是使用外部传入的 ROS 2 节点。
 // 它主要完成两件事：
@@ -151,6 +176,11 @@ public:
     void finishCanceledGripperGoal(
         const std::shared_ptr<GoalHandleGripperTarget> &goal_handle,
         const std::shared_ptr<GripperTarget::Result> &result);
+    
+    
+    // --------------------- Planning Scene Interface ---------------------
+    bool addWall(const WallConfig& config);
+    bool addTestWalls();
 
 private:
     // 外部传入的 ROS 2 节点。
@@ -159,6 +189,9 @@ private:
     // MoveIt 的机械臂和夹爪规划接口。
     std::shared_ptr<MoveGroupInterface> arm_;
     std::shared_ptr<MoveGroupInterface> gripper_;
+
+    // MoveIt Planning Scene Interface
+    std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> planning_scene_interface_;
 
     // Action 使用的回调组和服务端对象。
     std::shared_ptr<rclcpp::CallbackGroup> callback_group_;

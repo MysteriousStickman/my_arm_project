@@ -32,15 +32,15 @@
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="Link1" link2="Link2" reason="Adjacent"/>
     <disable_collisions link1="Link1" link2="Link3" reason="Never"/>
-    <disable_collisions link1="Link1" link2="base_link" reason="Adjacent"/>
+    <disable_collisions link1="Link1" link2="base_link_model" reason="Adjacent"/>
     <disable_collisions link1="Link2" link2="Link3" reason="Adjacent"/>
-    <disable_collisions link1="Link2" link2="base_link" reason="Never"/>
+    <disable_collisions link1="Link2" link2="base_link_model" reason="Never"/>
     <disable_collisions link1="Link2" link2="left_gripper" reason="Never"/>
     <disable_collisions link1="Link2" link2="right_gripper" reason="Never"/>
     <disable_collisions link1="Link3" link2="Link4" reason="Adjacent"/>
     <disable_collisions link1="Link3" link2="Link5" reason="Never"/>
     <disable_collisions link1="Link3" link2="Link6" reason="Never"/>
-    <disable_collisions link1="Link3" link2="base_link" reason="Never"/>
+    <disable_collisions link1="Link3" link2="base_link_model" reason="Never"/>
     <disable_collisions link1="Link3" link2="left_gripper" reason="Never"/>
     <disable_collisions link1="Link3" link2="right_gripper" reason="Never"/>
     <disable_collisions link1="Link4" link2="Link5" reason="Adjacent"/>

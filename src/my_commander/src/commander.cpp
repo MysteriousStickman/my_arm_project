@@ -23,6 +23,10 @@ Commander::Commander(const std::shared_ptr<rclcpp::Node> &node)
     arm_ = std::make_shared<MoveGroupInterface>(node, "arm");
     gripper_ = std::make_shared<MoveGroupInterface>(node_, "gripper");
 
+    // MoveIt Planning Scene Interface
+    planning_scene_interface_ = std::make_shared<moveit::planning_interface::PlanningSceneInterface>();
+
+    addTestWalls();
     // joint_limits.yaml 定义绝对上限，下面的参数决定本节点使用速度上限的比例。
     // NodeOptions 可能已经从 launch 自动声明参数，因此先检查再声明。
     if (!node_->has_parameter("velocity_scaling_factor"))
@@ -80,6 +84,19 @@ Commander::Commander(const std::shared_ptr<rclcpp::Node> &node)
         std::bind(&Commander::gripper_target_handle_accepted, this, _1),
         rcl_action_server_get_default_options(),
         callback_group_);
+    
+    RCLCPP_INFO(
+    node_->get_logger(),
+    "------------------Planning Frame++++++++++++++++: %s",arm_->getPlanningFrame().c_str());
+    RCLCPP_INFO(
+        node_->get_logger(),
+        "Planning Frame: %s",
+        arm_->getPlanningFrame().c_str());
+
+    RCLCPP_INFO(
+        node_->get_logger(),
+        "End Effector Link: %s",
+        arm_->getEndEffectorLink().c_str());
 }
 
 // ------------------------------------ 以下是夹爪部分 ------------------------------------
@@ -122,12 +139,6 @@ rclcpp_action::GoalResponse Commander::gripper_target_handle_goal(
     {
         const double lower = bounds.min_position_;
         const double upper = bounds.max_position_;
-        RCLCPP_ERROR(
-            node_->get_logger(),
-            "GripperTarget rejected: target %.4f out of range [%.4f, %.4f]",
-            goal->position,
-            lower,
-            upper);
 
         if (goal->position < lower - kBoundTol ||
             goal->position > upper + kBoundTol)

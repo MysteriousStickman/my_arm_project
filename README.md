@@ -218,6 +218,11 @@ ros2 launch my_robot_bringup my_robot.launch.py \
     - gripper_close: 夹爪关闭
     - grriper_move: 夹爪移动
 
+## 前端测试:test_action
+如何获取目标位姿？
+- 启动机器人描述脚本：`ros2 launch alicia_d_descriptions display.launch.py`
+- 手动调整joint,然后在另一个终端：`ros2 run tf2_ros tf2_echo base_link gripper_center`
+
 
 ## 最终启动方式
 - 启动机器人、MoveIt 和 commander：
