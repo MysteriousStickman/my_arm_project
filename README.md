@@ -2,7 +2,8 @@
 - 机器人描述URDF: `alicia_d_descriptions` 
     - 查看描述文件: `ros2 launch alicia_d_descriptions display.launch.py`
 - 机器人驱动SDK: `alicia_d_driver`
-经过可视化发现原厂urdf的x轴朝机械臂正后方，因此需要修改urdf,
+
+经过可视化发现原厂urdf的x轴朝机械臂正后方，因此需要修改urdf
 - 将原始的`base_link`改名为`base_link_model`，
 - 新建空的`base_link`，新建关节，并将`base_link_model`固定到`base_link`上，z轴旋转180度
 - 将原来的`joint1`中的`link1`固定到`base_link_model`上
