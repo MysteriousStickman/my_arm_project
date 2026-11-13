@@ -19,7 +19,7 @@ add_library(${PROJECT_NAME}
   src/commander.cpp
   src/commander_pose_target.cpp
   src/commander_joint_target.cpp
-  src/palnning_scene_interface.cpp
+  src/planning_scene_interface.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

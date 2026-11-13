@@ -164,9 +164,10 @@ ros2 run tf2_ros tf2_echo base_link gripper_center
         - `gripper_controller`: 开启夹爪控制器
         - `move_group`: MoveIt move_group 规划节点
         - `rviz`: 开启可视化
-- 构建激活并执行启动:
-    - 仅仿真: `ros2 launch my_robot_bringup my_robot.launch.py`
-    - 真机: `ros2 launch my_robot_bringup my_robot.launch.py use_fake_hardware:=false port:=/dev/ttyACM0`
+        - `commander`: 自定义启动后端
+            - 基于moveit控制包，封装了一层控制脚本，由多线程执行器，并行规划组，action，planning_scene_interface(环境碰撞规划) 组成
+            - **暂时只支持任务级控制，给定末端目标位姿，或关节位姿**。moveit基于**环境碰撞及自碰撞**进行路径规划与笛卡尔路径规划，**支持急停**
+            - TODO: 后续有需要需学习MoveIt Servo，实现连续实时伺服控制。
 
 ## 速度参数的分层和统一入口
 
@@ -191,7 +192,7 @@ ros2 run tf2_ros tf2_echo base_link gripper_center
 `velocity_scaling_factor` 决定 MoveIt 轨迹的时间和速度；`speed_deg_s` 是真机厂家协议的速度。仿真只使用前者，真机两者都要保守设置。
 
 ## 自定义控制后端：commander
-基于**多线程执行器、并行规划组、Action、自定义消息接口**实现控制后端
+基于**多线程执行器、并行规划组、Action、自定义消息接口**实现控制后端。TODO:补充action名称及接口
 - arm规划：
     - action name: `goToPoseTarget`：
         - 消息接口：
@@ -200,14 +201,15 @@ ros2 run tf2_ros tf2_echo base_link gripper_center
             - 反馈
     - joint_target控制，逆运动学达到目标角度
 - gripper规划：
-    - gripper_open: 夹爪打开
-    - gripper_close: 夹爪关闭
     - grriper_move: 夹爪移动
 
 ## 前端测试:test_action
 如何获取目标位姿？
 - 启动机器人描述脚本：`ros2 launch alicia_d_descriptions display.launch.py`
 - 手动调整joint,然后在另一个终端：`ros2 run tf2_ros tf2_echo base_link gripper_center`
+
+如何获取机器人组件大小？
+- `python src/test_action/python_demo/check_stl.py --stl_path stl_path`
 
 
 ## 最终启动方式
