@@ -2,6 +2,10 @@
 - 机器人描述URDF: `alicia_d_descriptions` 
     - 查看描述文件: `ros2 launch alicia_d_descriptions display.launch.py`
 - 机器人驱动SDK: `alicia_d_driver`
+经过可视化发现原厂urdf的x轴朝机械臂正后方，因此需要修改urdf,
+- 将原始的`base_link`改名为`base_link_model`，
+- 新建空的`base_link`，新建关节，并将`base_link_model`固定到`base_link`上，z轴旋转180度
+- 将原来的`joint1`中的`link1`固定到`base_link_model`上
 
 # 制作 MoveIt 配置包
 
@@ -220,7 +224,7 @@ ros2 launch my_robot_bringup my_robot.launch.py \
     - `source install/setup.zsh` && `ros2 launch my_robot_bringup my_robot.launch.py use_fake_hardware:=true`
 - `commander_node` 已由上述 launch 启动，不要再单独运行，否则会出现重名节点和重复的 Action Server。
 # TODO:List
-- 如何定义环境碰撞
 - 如何引入深度相机
 - 如何进行相机标定
 - 最后才考虑真机
+- 当前commander实现的是任务级控制，给定末端位姿，机械臂规划执行。之后考虑加入基于MoveIt Servo的连续伺服控制。
