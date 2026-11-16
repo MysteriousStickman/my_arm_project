@@ -12,4 +12,8 @@ install(
   DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME}
 )
+install(
+  PROGRAMS scripts/alicia_read_only_state.py scripts/alicia_read_only_worker.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 ament_package()

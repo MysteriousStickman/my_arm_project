@@ -212,6 +212,47 @@ ros2 run tf2_ros tf2_echo base_link gripper_center
 - `python src/test_action/python_demo/check_stl.py --stl_path stl_path`
 
 
+## 真机实时反馈与 RViz 的只读核对
+串口权限生效:`newgrp dialout`
+
+重新设置设备零位后，先核对实物与模型，再接入规划执行。`read_only.launch.py` 用厂家 SDK 读取真实关节位置并发布 `/joint_states`，同时启动 `robot_state_publisher` 和 RViz。它不启动 ros2_control、MoveIt 或 Commander，没有运动控制订阅接口。
+
+启动前停止旧的 `display.launch.py`、关节滑块、`sdk_snapshot_display`、独立 SDK 读取程序和其他占用串口的程序。该阶段只保留真实反馈一个 `/joint_states` 来源。
+
+```zsh
+cd ~/workspace/learn_ros_moveit/my_arm_project
+source install/setup.zsh
+ros2 launch my_robot_bringup read_only.launch.py \
+  port:=/dev/ttyACM0 \
+  expected_serial:=ADFS2604226S4262
+```
+
+默认使用 `~/miniconda3/envs/alicia_d_sdk/bin/python` 运行 SDK，ROS 使用系统 Python。可通过 `sdk_python:=/其他环境/bin/python`、`sdk_path:=/SDK源码目录` 修改；SDK 目录默认从当前工作空间查找同级 `Alicia-D-SDK`。SDK 环境需要已经能够运行厂家状态读取示例。`gripper_type` 默认 `50mm`，可选 `100mm`。
+
+串口发送只允许版本查询和关节/夹爪位置查询两种完整报文；指定端口不可用时不会自动寻找其他设备。序列号不匹配、读取超时或没有新的有效关节反馈帧时停止读取并关闭该启动流程，不发布默认零值或用命令代替反馈。接收超时使用单调时钟，不受系统时间校正影响。打开串口仍沿用厂家的 DTR/RTS 行为，设备固件自身的复位或开机动作不由这个程序控制。
+
+启动成功后应出现 `First measured joint state published on /joint_states`，随后每约 5 秒输出 `Feedback active` 和累计发布数量。只有发布者计数，没有这两类日志，不能说明已收到真实反馈。
+
+核对时在另一个加载 ROS 环境的终端执行：
+
+```zsh
+ros2 topic info /joint_states
+ros2 topic echo /joint_states --once
+ros2 topic hz /joint_states
+```
+
+应只有一个发布者 `alicia_read_only_state`，正常目标读取频率约 10 Hz。六轴单位为 rad；50mm 夹爪的单侧位移按 `Gripper = (1 - 原始值 / 1000) * 0.025` 换算，0 为全开、0.025 m 为闭合。`right_finger` 由 URDF mimic 关系生成，不另发虚构位置、速度或力矩。
+
+先在静止姿态核对模型。该入口不卸力，也不让真机移动；不要为观察 RViz 而强扳已使能的关节。动态方向与反馈跟随需要另行安排小幅、单轴验证。仅静态吻合不能验证关节方向、整个工作空间精度、实际限位或碰撞安全，也不能替代真机驱动启动同步和失联处理。
+
+停止时在 launch 终端按 `Ctrl+C`；只读程序关闭串口，不改变扭矩状态，也不是机械臂的停车或急停接口。
+
+离线验证（不打开串口）：
+
+```zsh
+/usr/bin/python3 -m unittest discover -s src/my_robot_bringup/test -v
+```
+
 ## 最终启动方式
 仿真： 只需设置 MoveIt 规划速度。
 ```bash
