@@ -119,7 +119,7 @@ Setup Assistant 可能把以下文件恢复成默认值，需要重新检查。
 - `arm_controller` 控制 Joint1 至 Joint6；`gripper_controller` 只控制 Gripper。
 - 两个轨迹控制器的 command/state interfaces 均为 `position`、`velocity`。
 - `arm_controller` 使用 `state_publish_rate: 200.0`、`action_monitor_rate: 20.0`、`open_loop_control: false` 和 `allow_integration_in_goal_trajectories: true`。
-- `constraints.stopped_velocity_tolerance: 0.01`，`constraints.goal_time: 0.0`。
+- `constraints.stopped_velocity_tolerance: 0.01`，`constraints.goal_time: 3.0`；Joint1 至 Joint6 的 `constraints.JointN.goal: 0.01`（rad）。
 
 `config/moveit_controllers.yaml`：
 
@@ -166,17 +166,17 @@ ros2 run tf2_ros tf2_echo base_link gripper_center
         - `rviz`: 开启可视化
         - `commander`: 自定义启动后端
             - 基于moveit控制包，封装了一层控制脚本，由多线程执行器，并行规划组，action，planning_scene_interface(环境碰撞规划) 组成
-            - **暂时只支持任务级控制，给定末端目标位姿，或关节位姿**。moveit基于**环境碰撞及自碰撞**进行路径规划与笛卡尔路径规划，**支持急停**
+            - **暂时只支持任务级控制，给定末端目标位姿，或关节位姿**。moveit基于**环境碰撞及自碰撞**进行路径规划与笛卡尔路径规划，支持 Action 取消与停止请求。
             - TODO: 后续有需要需学习MoveIt Servo，实现连续实时伺服控制。
 
 ## 速度参数的分层和统一入口
 
-所有调速入口集中在本项目的 `my_robot.launch.py`，不修改厂家的描述包和驱动包。
+所有调速入口集中在本项目的 `my_robot.launch.py`；厂家驱动的启动同步改动见下文。
 
 - 控制速度参数：
     - `velocity_scaling_factor`：速度缩放比例，范围 `(0.0, 1.0]`。项目默认 `0.05`，表示使用各关节速度上限的 5%。
         - `velocity_scaling_factor` 由 `my_robot.launch.py` 传给 `commander_node`，Commander 同时应用到 `arm` 和 `gripper` 规划组。
-    - `speed_deg_s` 只用于真机，单位为 `deg/s`。本项目的 bringup 将它作为 `default_speed_deg_s` 硬件参数传给未修改的厂家插件；厂家插件使用同一个速度控制六个机械臂关节。项目默认 `5.0`，略高于厂家协议约 `4.39 deg/s` 的下限。
+    - `speed_deg_s` 只用于真机，单位为 `deg/s`。本项目的 bringup 将它作为 `default_speed_deg_s` 硬件参数传给厂家插件；厂家插件使用同一个速度控制六个机械臂关节。项目默认 `5.0`，低于约 `4.39 deg/s` 的值会被驱动抬至下限，日志参数不等于实际运动速度。
     - 两者关系: 
         - `velocity_scaling_factor`是moveit规划的速度缩放比例，各关节规划速度上限为其 max_velocity 乘以该缩放比例。
         - `speed_deg_s`是真机最大速度。
@@ -185,9 +185,7 @@ ros2 run tf2_ros tf2_echo base_link gripper_center
     - `moveit_config/config/joint_limits.yaml` 中的 `max_velocity` 是各关节绝对规划上限，不作为日常调速旋钮。旋转关节单位是 `rad/s`，直线移动的 Gripper 单位是 `m/s`。
     - 当前所有关节都设置为 `has_acceleration_limits: false`，没有可信的绝对加速度上限。因此本项目暂不暴露 `acceleration_scaling_factor`，以后取得厂家加速度数据并配置 `max_acceleration` 后再恢复。
     - 夹爪的 MoveIt 规划上限为 `0.05 m/s`，默认 5% 缩放后是 `0.0025 m/s`，25 mm 行程的规划时间约为 10 秒。
-    - 真机夹爪协议仍由未修改的厂家驱动使用固定原始速度 `5500`。厂家插件没有暴露夹爪速度参数，仓库也没有提供该值到 `m/s` 的换算关系。因此本项目目前只能控制夹爪的 MoveIt 规划时间，不能承诺真机夹爪协议层速度可调；在厂家提供接口或协议说明前应单独谨慎测试夹爪。
-
-总结： velocity_scaling_factor 控制 MoveIt 轨迹的规划速度；speed_deg_s 控制真机机械臂的硬件速度。仿真只需设置前者，真机需要同时设置两者。
+    - 真机夹爪协议仍由厂家驱动使用固定原始速度 `5500`。厂家插件没有暴露夹爪速度参数，仓库也没有提供该值到 `m/s` 的换算关系。因此本项目目前只能控制夹爪的 MoveIt 规划时间，不能承诺真机夹爪协议层速度可调；在厂家提供接口或协议说明前应单独谨慎测试夹爪。
 
 `velocity_scaling_factor` 决定 MoveIt 轨迹的时间和速度；`speed_deg_s` 是真机厂家协议的速度。仿真只使用前者，真机两者都要保守设置。
 
@@ -253,6 +251,20 @@ ros2 topic hz /joint_states
 /usr/bin/python3 -m unittest discover -s src/my_robot_bringup/test -v
 ```
 
+## 真机接入改动与验证进度
+
+保留厂家插件架构，本次改动集中在三处，Commander 的控制逻辑和实测环境碰撞几何保持原样：
+
+| 文件 | 改动要点 |
+| --- | --- |
+| `alicia_d_driver/src/alicia_d_hardware_interface.cpp` | `on_activate()` 在开启扭矩前读取并校验六轴和夹爪反馈，用实测位置初始化硬件状态和初始控制目标，避免发送默认零位目标；连接失败或反馈无效时拒绝激活。 |
+| `my_robot_bringup/launch/my_robot.launch.py` | 三个控制器按成功顺序启动，再启动 MoveIt、Commander 和 RViz；任一控制器启动失败则退出 launch。 |
+| `moveit_config/config/ros2_controllers.yaml` | 六轴到位位置容差设为 `0.01 rad`（约 `0.57°`），轨迹结束后允许等待 `3 s`；用于到位判定，不改变电机控制精度。 |
+
+MoveIt 和 RViz 通过 `/joint_states` 获取真实当前姿态，关节不必处于零位。已验证启动保持、实物与 RViz 姿态对应，以及 RViz 和 Commander 的 Joint1 小幅规划执行；当前小幅测试偏差在上述容差内，到位误差后续单独处理。
+
+每个操作终端均需 `source install/setup.zsh`。启动真机前退出旧的模拟 launch、只读读取程序和关节 GUI，避免同名控制器、串口或 `/joint_states` 冲突。
+
 ## 最终启动方式
 仿真： 只需设置 MoveIt 规划速度。
 ```bash
@@ -265,12 +277,11 @@ ros2 launch my_robot_bringup my_robot.launch.py \
 ros2 launch my_robot_bringup my_robot.launch.py \
   use_fake_hardware:=false \
   port:=/dev/ttyACM0 \
-  velocity_scaling_factor:=0.05 \
+  velocity_scaling_factor:=0.01 \
   speed_deg_s:=5.0
 ```
 # TODO:List
-- 结合实际机械臂环境（机械臂位置，桌子，墙）添加环境碰撞box
+- 真机到位误差与重复定位精度
 - 如何引入深度相机
 - 如何进行相机标定
-- 最后才考虑真机
 - 当前commander实现的是任务级控制，给定末端位姿，机械臂规划执行。之后考虑加入基于MoveIt Servo的连续伺服控制。

@@ -120,15 +120,67 @@ CallbackReturn AliciaDHardwareInterface::on_activate(
     // Print all available information
     data_parser_control_->print_information();
 
-    // Enable torque using data parser control
+
+
+    // 1. 请求关节反馈，最多等待 3 秒，每 0.2 秒重试。
+    const bool received =
+      data_parser_control_->acquire_info("joint", true, 3.0, 0.2);
+    const auto joint_state = data_parser_control_->get_joint_state();
+
+    // 2. 校验六轴和夹爪反馈。
+    // 硬件接口共 7 项：6 个关节 + 1 个夹爪。
+    bool valid = received && joint_state.has_value() &&
+                 joint_state->angles.size() == 6 &&
+                 hw_positions_state_.size() == 7;
+    
+    if (valid)
+    {
+      for (double angle : joint_state->angles)
+      {
+        valid = valid && std::isfinite(angle);
+      }
+
+      valid = valid && std::isfinite(joint_state->gripper) &&
+              joint_state->gripper >= 0.0 &&
+              joint_state->gripper <= 1000.0;
+    }
+
+    // 3. 无有效反馈则拒绝激活，不继续开启扭矩。
+    if (!valid)
+    {
+      RCLCPP_ERROR(rclcpp::get_logger("AliciaDHardwareInterface"),
+                   "Activation failed: no valid joint feedback");
+      data_parser_control_->stop_parsing_thread();
+      communicator_->disconnect();
+      hardware_connected_ = false;
+      return CallbackReturn::ERROR;
+    }
+
+    // 4. 实测位置写入状态，再复制为初始控制目标。
+    for (size_t i = 0; i < 6; ++i)
+    {
+      hw_positions_state_[i] = joint_state->angles[i];
+    }
+
+    // 夹爪原始值 0～1000 转换成米。
+    hw_positions_state_[6] =
+      data_parser_control_->gripper_value_to_position(joint_state->gripper);
+
+    hw_positions_command_ = hw_positions_state_;
+
+    RCLCPP_INFO(rclcpp::get_logger("AliciaDHardwareInterface"),
+                "Startup command synchronized to measured joint positions");
+    
+    // 确认反馈有效、目标同步后，再开启扭矩。
     data_parser_control_->torque_control("on");
   }
   else
   {
     hardware_connected_ = false;
-    RCLCPP_WARN(rclcpp::get_logger("AliciaDHardwareInterface"), 
-                "No hardware connected. Running in simulation/demo mode. "
-                "Hardware interface will accept commands but they will not be sent to robot.");
+    RCLCPP_ERROR(
+      rclcpp::get_logger("AliciaDHardwareInterface"),
+      "Activation failed: serial connection failed");
+    return CallbackReturn::ERROR;
   }
 
   // Initialize command to current state

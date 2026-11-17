@@ -14,6 +14,20 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from moveit_configs_utils import MoveItConfigsBuilder
 
+from launch.actions import EmitEvent
+from launch.events import Shutdown
+
+
+def after_success(next_actions):
+    def callback(event, context):
+        if event.returncode != 0:
+            return [
+                LogInfo(msg=f"Controller startup failed: exit={event.returncode}"),
+                EmitEvent(event=Shutdown(reason="Controller startup failed")),
+            ]
+        return next_actions
+
+    return callback
 
 def launch_setup(context):
     use_fake_hardware = LaunchConfiguration("use_fake_hardware").perform(context).lower()
@@ -161,16 +175,22 @@ def launch_setup(context):
         ],
     )
 
+    # 优化启动顺序，只有上一个成功启动  才能启动下一个
+    # joint_state_broadcaster → arm_controller
     start_arm_controller = RegisterEventHandler(
-        OnProcessExit(target_action=joint_state_broadcaster, on_exit=[arm_controller])
+        OnProcessExit(target_action=joint_state_broadcaster, on_exit=after_success([arm_controller]))
     )
+
+    # arm_controller → gripper_controller
     start_gripper_controller = RegisterEventHandler(
-        OnProcessExit(target_action=arm_controller, on_exit=[gripper_controller])
+        OnProcessExit(target_action=arm_controller, on_exit=after_success([gripper_controller]))
     )
+
+    # gripper_controller → MoveIt、Commander、RViz
     start_moveit = RegisterEventHandler(
         OnProcessExit(
             target_action=gripper_controller,
-            on_exit=[move_group, commander, rviz],
+            on_exit=after_success([move_group, commander, rviz]),
         )
     )
 

@@ -40,7 +40,13 @@ arm_controller:
     # Constraints for trajectory execution
     constraints:
       stopped_velocity_tolerance: 0.01  # Velocity threshold to consider stopped
-      goal_time: 0.0  # Start trajectory immediately (0 = now)
+      goal_time: 3.0  # Allow up to 3 seconds after trajectory end to meet goal tolerances
+      Joint1: {goal: 0.01}  # 增加成功判定条件，不会改变电机的控制精度  每轴到位误差允许 0.01 rad，约 0.57°，作为当前的初步验收阈值
+      Joint2: {goal: 0.01}
+      Joint3: {goal: 0.01}
+      Joint4: {goal: 0.01}
+      Joint5: {goal: 0.01}
+      Joint6: {goal: 0.01}
 gripper_controller:
   ros__parameters:
     joints:
